@@ -1,4 +1,39 @@
-/* You can add global styles to this file, and also import other style files */
+@import "./scss/colors";
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body {
+  background-color: $color-background;
+  color: $color-text;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+}
+
+button {
+  padding: 8px 10px;
+  border: 1px solid #5b5b5b;
+  background-color: inherit;
+  border-radius: 5px;
+  color: $color-text;
+  height: 30px;
+  width: 80px;
+  margin-right: 5px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.3;
+  }
+}
+
+.range-color-container .mat-icon {
+  height: 16px;
+  width: 16px;
+  line-height: 16px;
+  font-size: 16px;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

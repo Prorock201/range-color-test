@@ -1,0 +1,56 @@
+@import "../../../../scss/colors.scss";
+
+.range-color-container {
+  margin: 100px;
+}
+
+.range-color-container-header {
+  display: flex;
+  align-items: center;
+  margin: 0 20% 50px;
+}
+
+.range-color-container-timer {
+  font-size: 3rem;
+  margin: 0 10%;
+}
+
+.range-color-container-current-color {
+  width: 150px;
+  height: 60px;
+  border-radius: 5px;
+}
+
+.range-color-container-table-header {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 10px;
+}
+
+.range-color-container-table-color {
+  width: 100px;
+  height: 30px;
+  border-radius: 5px;
+}
+
+::ng-deep {
+  .mat-mdc-table {
+    color: $color-text;
+
+    .mat-mdc-header-row {
+      background-color: $color-secondary;
+      color: $color-text;
+    }
+  
+    .mat-mdc-row {
+      background-color: $color-primary;
+      color: $color-text;
+    }
+  }
+
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    width: 25%;
+    height: 40px;
+  }
+}

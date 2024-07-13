@@ -1,0 +1,58 @@
+<section class="range-color-container">
+  <div class="range-color-container-header">
+    <div class="range-color-container-timer">{{ currentTimer$ | async }}</div>
+    <div class="range-color-container-current-color" [style.backgroundColor]="currentColor$ | async"></div>
+  </div>
+  <div class="range-color-container-table-wrapper">
+    <div class="range-color-container-table-header">
+      <button
+        (click)="addCreateForm()"
+        [disabled]="rangeColorService.hasCreateRow || (rangeColor$ | async)?.length === 5">
+        <mat-icon>add</mat-icon>
+        New
+      </button>
+    </div>
+    <div class="range-color-container-table-container">
+      <table mat-table [dataSource]="rangeColor$" class="mat-elevation-z8">
+        <!-- From seconds Column -->
+        <ng-container matColumnDef="fromSeconds">
+          <th mat-header-cell *matHeaderCellDef>From seconds</th>
+          <td mat-cell *matCellDef="let element">{{element.fromSecond}}</td>
+        </ng-container>
+      
+        <!-- To seconds Column -->
+        <ng-container matColumnDef="toSeconds">
+          <th mat-header-cell *matHeaderCellDef>To Seconds</th>
+          <td mat-cell *matCellDef="let element">{{element.toSecond}}</td>
+        </ng-container>
+      
+        <!-- Color Column -->
+        <ng-container matColumnDef="color">
+          <th mat-header-cell *matHeaderCellDef>Color</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="range-color-container-table-color" [style.backgroundColor]="element.color"></div>
+          </td>
+        </ng-container>
+      
+        <!-- Action Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let element">
+            <button (click)="removeRangeColorItem(element.color)">
+              <mat-icon>delete</mat-icon>
+              Delete
+            </button>
+          </td>
+        </ng-container>
+      
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+    <div
+      *ngIf="rangeColorService.hasCreateRow || !(rangeColor$ | async)?.length"
+      class="range-color-container-table-new-line">
+      <app-creating-row></app-creating-row>
+    </div>
+  </div>
+</section>

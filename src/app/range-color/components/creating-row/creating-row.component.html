@@ -1,0 +1,58 @@
+<form
+  class="creating-row-form"
+  [formGroup]="addRangeColorItemForm"
+  (ngSubmit)="addRangeColorItem()"
+>
+  <div class="creating-row-form-control-wrapper">
+    <input
+      class="creating-row-form-input"
+      type="number"
+      formControlName="fromSecond"
+      placeholder="From"
+    >
+    <ng-container *ngIf="formSecond?.touched && formSecond?.invalid">
+      <mat-error>{{checkForErrorsInRange(formSecond)}}</mat-error>
+    </ng-container>
+  </div>
+
+  <div class="creating-row-form-control-wrapper">
+    <input
+      class="creating-row-form-input"
+      type="number"
+      formControlName="toSecond"
+      placeholder="To"
+    >
+    <ng-container *ngIf="toSecond?.touched && toSecond?.invalid">
+      <mat-error>{{checkForErrorsInRange(toSecond)}}</mat-error>
+    </ng-container>
+
+    <ng-container *ngIf="toSecond?.valid && hasFormError('fromGreaterThanTo')">
+      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm)}}</mat-error>
+    </ng-container>
+
+    <ng-container *ngIf="toSecond?.valid && hasFormError('timeRangeConflict')">
+      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm)}}</mat-error>
+    </ng-container>
+  </div>
+
+  <div class="creating-row-form-control-wrapper">
+    <input
+      class="creating-row-form-input-color"
+      type="color"
+      formControlName="color"
+    >
+    <ng-container *ngIf="hasFormError('colorConflict')">
+      <mat-error>{{checkForErrorsInColor(addRangeColorItemForm)}}</mat-error>
+    </ng-container>
+  </div>
+
+  <div class="creating-row-form-control-wrapper">
+    <button
+      [disabled]="!addRangeColorItemForm.valid"
+      type="submit"
+    >
+      <mat-icon>add</mat-icon>
+      Add
+    </button>
+  </div>
+</form>
