@@ -1,13 +1,15 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { RangeColorService } from './range-color.service';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, withLatestFrom } from 'rxjs';
 import { RangeColor } from '../models/range-color.model';
 import { LocalStorageService } from './local-storage.service';
+import { UtilityService } from './utility.service';
 
 describe('RangeColorService', () => {
   let rangeColorService: RangeColorService;
-  let mockLocalStorageService = jasmine.createSpyObj('LocalStorageService', ['getDataFromLocalStorage', 'updateLocalStorage'])
+  let mockLocalStorageService = jasmine.createSpyObj('LocalStorageService', ['getDataFromLocalStorage', 'updateLocalStorage']);
+  let mockUtilityService = jasmine.createSpyObj('UtilityService', ['binaryTimeRangeSearch', 'binaryColorSearch'])
   let currentTimerSubject: BehaviorSubject<number>;
   let rangeColorSubject: BehaviorSubject<RangeColor[]>;
 
@@ -15,7 +17,8 @@ describe('RangeColorService', () => {
     TestBed.configureTestingModule({
       providers: [
         RangeColorService,
-        { provide: LocalStorageService, useValue: mockLocalStorageService }
+        { provide: LocalStorageService, useValue: mockLocalStorageService },
+        { provide: UtilityService, useValue: mockUtilityService }
       ]
     });
 
@@ -45,7 +48,7 @@ describe('RangeColorService', () => {
     const spyInitTimeUpdater = spyOn(RangeColorService.prototype as any, 'initTimeUpdater');
     const spyInitRangeColorData = spyOn(RangeColorService.prototype as any, 'initRangeColorData');
 
-    rangeColorService = new RangeColorService(mockLocalStorageService);
+    rangeColorService = new RangeColorService(mockLocalStorageService, mockUtilityService);
 
     expect(spyInitTimer).toHaveBeenCalled();
     expect(spyInitRangeColorUpdater).toHaveBeenCalled();
@@ -62,41 +65,130 @@ describe('RangeColorService', () => {
     });
   });
 
-  it('initTimeUpdater() should update range color when needed', fakeAsync(() => {
+  it('initRangeColorUpdater() should call updateRangeColor', fakeAsync(() => {
     const spyUpdateRangeColor = spyOn(rangeColorService as any, 'updateRangeColor');
+    const mockTimer = 17;
+    const mockRangeColor: RangeColor[] = [
+      { fromSecond:6, toSecond:7, color: '#000000' },
+      { fromSecond:21, toSecond:30, color: '#1bd317' },
+      { fromSecond:31, toSecond:40, color:'#0320fc' },
+      { fromSecond:56, toSecond:57, color: '#938f1f' },
+      { fromSecond:58, toSecond:59, color: '#4dc7a8' }
+    ];
 
-    (rangeColorService as any).currentTimerSubject.next(55);
+    (rangeColorService as any).currentTimerSubject.next(mockTimer);
+    (rangeColorService as any).rangeColorSubject.next(mockRangeColor);
+    rangeColorService.rangeColor$
+      .pipe(withLatestFrom(rangeColorService.currentTimer$))
+      .subscribe(([rangeColor, timer]) => {
+        expect(timer).toEqual(mockTimer);
+        expect(rangeColor).toEqual(mockRangeColor);
+        expect(spyUpdateRangeColor).toHaveBeenCalledWith(rangeColor, timer);
+    });
+  }));
+
+  it('initTimeUpdater() should update range color when it needed', fakeAsync(() => {
+    const spyUpdateRangeColor = spyOn(rangeColorService as any, 'updateRangeColor');
+    const mockRangeColor: RangeColor[] = [
+      { fromSecond:6, toSecond:7, color: '#000000' },
+      { fromSecond:10, toSecond:20, color: '#b81414' },
+      { fromSecond:21, toSecond:30, color: '#1bd317' },
+      { fromSecond:31, toSecond:40, color:'#0320fc' },
+      { fromSecond:41, toSecond:50, color: '#e5d41f' },
+      { fromSecond:51, toSecond:52, color: '#a18787' },
+      { fromSecond:56, toSecond:57, color: '#938f1f' },
+      { fromSecond:58, toSecond:59, color: '#4dc7a8' }
+    ];
+    (rangeColorService as any).activeRangeColor = {
+      fromSecond: 10,
+      toSecond: 20,
+      color: '#b81414'
+    };
+
+    (rangeColorService as any).rangeColorSubject.next(mockRangeColor);
     expect(spyUpdateRangeColor).toHaveBeenCalledTimes(1);
 
-    (rangeColorService as any).currentTimerSubject.next(5);
+    (rangeColorService as any).currentTimerSubject.next(8);
     expect(spyUpdateRangeColor).toHaveBeenCalledTimes(2);
 
-    (rangeColorService as any).currentTimerSubject.next(7);
-    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(3);
+    (rangeColorService as any).currentTimerSubject.next(11);
+    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(2);
 
-    (rangeColorService as any).currentTimerSubject.next(12);
-    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(4);
+    (rangeColorService as any).currentTimerSubject.next(15);
+    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(2);
+
+    (rangeColorService as any).currentTimerSubject.next(19);
+    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(2);
+
+    (rangeColorService as any).currentTimerSubject.next(21);
+    expect(spyUpdateRangeColor).toHaveBeenCalledTimes(3);
+  }));
+
+  it('initTimeUpdater() should call updateRangeColor', fakeAsync(() => {
+    const spyUpdateRangeColor = spyOn(rangeColorService as any, 'updateRangeColor');
+    const mockTimer = 7;
+    const mockRangeColor: RangeColor[] = [
+      { fromSecond:6, toSecond:7, color: '#000000' },
+      { fromSecond:10, toSecond:20, color: '#b81414' },
+      { fromSecond:21, toSecond:30, color: '#1bd317' },
+      { fromSecond:31, toSecond:40, color:'#0320fc' },
+      { fromSecond:41, toSecond:50, color: '#e5d41f' },
+      { fromSecond:51, toSecond:52, color: '#a18787' },
+      { fromSecond:56, toSecond:57, color: '#938f1f' },
+      { fromSecond:58, toSecond:59, color: '#4dc7a8' }
+    ];
+
+    (rangeColorService as any).currentTimerSubject.next(mockTimer);
+    (rangeColorService as any).rangeColorSubject.next(mockRangeColor);
+    rangeColorService.currentTimer$
+      .pipe(withLatestFrom(rangeColorService.rangeColor$))
+      .subscribe(([timer, rangeColor]) => {
+        expect(timer).toEqual(mockTimer);
+        expect(rangeColor).toEqual(mockRangeColor);
+        expect(spyUpdateRangeColor).toHaveBeenCalledWith(rangeColor, timer);
+    });
   }));
 
   it('updateRangeColor() should set the default color', () => {
     let color: string | undefined;
-
+    const mockDefaultColor = '#fff';
+    const mockRangeColor: RangeColor[] = [
+      { fromSecond:6, toSecond:7, color: '#000000' },
+      { fromSecond:10, toSecond:20, color: '#b81414' },
+      { fromSecond:21, toSecond:30, color: '#1bd317' },
+      { fromSecond:31, toSecond:40, color:'#0320fc' },
+      { fromSecond:41, toSecond:50, color: '#e5d41f' },
+      { fromSecond:51, toSecond:52, color: '#a18787' },
+      { fromSecond:56, toSecond:57, color: '#938f1f' },
+      { fromSecond:58, toSecond:59, color: '#4dc7a8' }
+    ];
+    const mockFoundIndex = -1;
+    mockUtilityService.binaryTimeRangeSearch.and.returnValue(mockFoundIndex);
     rangeColorService.currentColor$.subscribe(c => color = c);
 
-    (rangeColorService as any).currentTimerSubject.next(50);
-    expect(color).toBe('#fff');
+    (rangeColorService as any).rangeColorSubject.next(mockRangeColor);
+    expect(color).toBe(mockDefaultColor);
   });
 
-  it('updateRangeColor() should update color when rangeColor change', () => {
+  it('updateRangeColor() should set new active color', () => {
     let color: string | undefined;
-
+    const mockRangeColor: RangeColor[] = [
+      { fromSecond:6, toSecond:7, color: '#000000' },
+      { fromSecond:10, toSecond:20, color: '#b81414' },
+      { fromSecond:21, toSecond:30, color: '#1bd317' },
+      { fromSecond:31, toSecond:40, color:'#0320fc' },
+      { fromSecond:41, toSecond:50, color: '#e5d41f' },
+      { fromSecond:51, toSecond:52, color: '#a18787' },
+      { fromSecond:56, toSecond:57, color: '#938f1f' },
+      { fromSecond:58, toSecond:59, color: '#4dc7a8' }
+    ];
+    const mockFoundIndex = 1;
+    mockUtilityService.binaryTimeRangeSearch.and.returnValue(mockFoundIndex);
     rangeColorService.currentColor$.subscribe(c => color = c);
 
-    (rangeColorService as any).rangeColorSubject.next([
-      { fromSecond: 0, toSecond: 51, color: '#0000ff' }
-    ]);
+    (rangeColorService as any).rangeColorSubject.next(mockRangeColor);
 
-    expect(color).toBe('#0000ff');
+    expect(color).toBe(mockRangeColor[mockFoundIndex].color);
   });
 
   it('addRangeColorItem() should add range color item', () => {
@@ -124,5 +216,16 @@ describe('RangeColorService', () => {
 
     expect(mockRangeColorSubjectNext).toHaveBeenCalledWith([]);
     expect(mockLocalStorageService.updateLocalStorage).toHaveBeenCalledWith(mockLocalStorageRangeColorKey, []);
+  });
+
+  it('ngOnDestroy() should unsubscribe on destroy', () => {
+    rangeColorService = new RangeColorService(mockLocalStorageService, mockUtilityService);
+    const mockNext = spyOn((rangeColorService as any).destroy$, 'next');
+    const mockComplete = spyOn((rangeColorService as any).destroy$, 'complete');
+
+    rangeColorService.ngOnDestroy();
+
+    expect(mockNext).toHaveBeenCalled();
+    expect(mockComplete).toHaveBeenCalled();
   });
 });

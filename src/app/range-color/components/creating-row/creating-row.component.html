@@ -10,8 +10,8 @@
       formControlName="fromSecond"
       placeholder="From"
     >
-    <ng-container *ngIf="formSecond?.touched && formSecond?.invalid">
-      <mat-error>{{checkForErrorsInRange(formSecond)}}</mat-error>
+    <ng-container *ngIf="fromSecond?.touched && fromSecond?.invalid">
+      <mat-error>{{checkForErrorsInRange(fromSecond, 'fromSecond')}}</mat-error>
     </ng-container>
   </div>
 
@@ -23,15 +23,15 @@
       placeholder="To"
     >
     <ng-container *ngIf="toSecond?.touched && toSecond?.invalid">
-      <mat-error>{{checkForErrorsInRange(toSecond)}}</mat-error>
+      <mat-error>{{checkForErrorsInRange(toSecond, 'toSecond')}}</mat-error>
     </ng-container>
 
     <ng-container *ngIf="toSecond?.valid && hasFormError('fromGreaterThanTo')">
-      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm)}}</mat-error>
+      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm, 'toSecond')}}</mat-error>
     </ng-container>
 
     <ng-container *ngIf="toSecond?.valid && hasFormError('timeRangeConflict')">
-      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm)}}</mat-error>
+      <mat-error>{{checkForErrorsInRange(addRangeColorItemForm, 'toSecond')}}</mat-error>
     </ng-container>
   </div>
 

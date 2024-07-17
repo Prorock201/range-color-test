@@ -7,7 +7,7 @@
     <div class="range-color-container-table-header">
       <button
         (click)="addCreateForm()"
-        [disabled]="rangeColorService.hasCreateRow || (rangeColor$ | async)?.length === 5">
+        [disabled]="rangeColorService.hasCreateRow || (rangeColor$ | async)?.length === 10">
         <mat-icon>add</mat-icon>
         New
       </button>

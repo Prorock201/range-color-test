@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { RangeColor } from '../models/range-color.model';
-import { BehaviorSubject, Observable, Subject, Subscription, filter, map, takeUntil, timer, withLatestFrom } from 'rxjs';
+import { BehaviorSubject, Subject, filter, map, takeUntil, timer, withLatestFrom } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
+import { UtilityService } from './utility.service';
 
 @Injectable({
   providedIn: 'root'
@@ -22,10 +23,10 @@ export class RangeColorService {
 
   private currentTimerSubject = new BehaviorSubject<number>(new Date().getSeconds());
   public currentTimer$ = this.currentTimerSubject.asObservable();
-  private timerSubscription!: Subscription;
 
   constructor(
-    private localStorageService: LocalStorageService
+    private localStorageService: LocalStorageService,
+    private utilityServices: UtilityService 
   ) {
     this.initTimer();
     this.initRangeColorUpdater();
@@ -34,9 +35,12 @@ export class RangeColorService {
   }
 
   private initTimer() {
-    this.timerSubscription = 
-      timer(0, 1000).pipe(map((n) => new Date().getSeconds()))
-      .subscribe(val => this.currentTimerSubject.next(val));
+    timer(0, 1000)
+      .pipe(
+        map((n) => new Date().getSeconds()),
+        takeUntil(this.destroy$)
+      )
+    .subscribe(val => this.currentTimerSubject.next(val));
   }
 
   private initRangeColorUpdater() {
@@ -79,14 +83,8 @@ export class RangeColorService {
   }
 
   public updateRangeColor(rangeColor: RangeColor[], timer: number) {
-    let newActiveRangeColor = null;
-
-    for (let entry of rangeColor) {
-      if (entry.fromSecond <= timer && entry.toSecond >= timer) {
-        newActiveRangeColor = entry;
-        break;
-      }
-    }
+    const foundActiveRangeColorIndex = this.utilityServices.binaryTimeRangeSearch(rangeColor, timer);
+    let newActiveRangeColor = rangeColor[foundActiveRangeColorIndex];
 
     if (newActiveRangeColor !== this.activeRangeColor) {
       this.activeRangeColor = newActiveRangeColor;
@@ -113,6 +111,5 @@ export class RangeColorService {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
-    this.timerSubscription.unsubscribe();
   }
 }

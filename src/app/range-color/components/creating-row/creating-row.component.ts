@@ -2,6 +2,19 @@ import { Component, EventEmitter, Output } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Observable, catchError, map, of, take } from 'rxjs';
 import { RangeColorService } from '../../services/range-color.service';
+import { UtilityService } from '../../services/utility.service';
+
+interface FormControlErrorMapper {
+  [key: string]: ErrorMessageMapper;
+};
+
+interface ErrorMessageMapper {
+  required: string;
+  min: string;
+  max: string;
+  timeRangeConflict: string;
+  fromGreaterThanTo: string;
+};
 
 @Component({
   selector: 'app-creating-row',
@@ -14,7 +27,8 @@ export class CreatingRowComponent {
   @Output() rangeColorItemAdded = new EventEmitter<void>();
 
   constructor(
-    private rangeColorService: RangeColorService
+    private rangeColorService: RangeColorService,
+    private utilityServices: UtilityService
   ) {
     this.addRangeColorItemForm = new FormGroup({
       fromSecond: new FormControl(
@@ -38,7 +52,7 @@ export class CreatingRowComponent {
     });
   }
 
-  get formSecond(): FormControl { 
+  get fromSecond(): FormControl { 
     return this.addRangeColorItemForm.get('fromSecond') as FormControl; 
   }
 
@@ -50,21 +64,37 @@ export class CreatingRowComponent {
     return this.addRangeColorItemForm.get('color') as FormControl; 
   }
 
-  checkForErrorsInRange(formControl: AbstractControl): string {
+  checkForErrorsInRange(formControl: AbstractControl, formControlName: string): string {
+    const errorMapper: FormControlErrorMapper = {
+      fromSecond: {
+        required: '"From" value is required',
+        min: 'Value must be more than 0',
+        max: 'Value must be less than 58',
+        timeRangeConflict: 'Selected time range overlaps with an existing configuration.',
+        fromGreaterThanTo: '"From" value must be less than "To" value.'
+      },
+      toSecond: {
+        required: '"To" value is required',
+        min: 'Value must be more than 1',
+        max: 'Value must be less than 59',
+        timeRangeConflict: 'Selected time range overlaps with an existing configuration.',
+        fromGreaterThanTo: '"From" value must be less than "To" value.'
+      }
+    }
     if (formControl.hasError('required')) {
-      return 'Value is required';
+      return errorMapper[formControlName].required;
     }
     if (formControl.hasError('min')) {
-      return 'Value must be more than 0'
+      return errorMapper[formControlName].min;
     }
     if (formControl.hasError('max')) {
-      return 'Value must be less than 59'
+      return errorMapper[formControlName].max;
     }
     if (formControl.hasError('timeRangeConflict')) {
-      return 'Selected time range overlaps with an existing configuration.'
+      return errorMapper[formControlName].timeRangeConflict;
     }
     if (formControl.hasError('fromGreaterThanTo')) {
-      return '"From" value must be less than "To" value.'
+      return errorMapper[formControlName].fromGreaterThanTo;
     }
     return ''
   }
@@ -94,8 +124,9 @@ export class CreatingRowComponent {
       return this.rangeColorService.rangeColor$.pipe(
         take(1),
         map(rangeColor => {
-          const colorMatches = rangeColor.some(item => item.color === color);
-          return colorMatches ? { 'colorConflict': true } : null;
+          const rangeColorSortedByColor = [...rangeColor].sort((a,b) => (a.color > b.color) ? 1 : ((b.color > a.color) ? -1 : 0));
+          const colorConflictIndex = this.utilityServices.binaryColorSearch(rangeColorSortedByColor, color);
+          return colorConflictIndex >= 0 ? { 'colorConflict': true } : null;
         }),
         catchError(() => of(null))
       );
@@ -114,10 +145,8 @@ export class CreatingRowComponent {
       return this.rangeColorService.rangeColor$.pipe(
         take(1),
         map(rangeColor => {
-          const rangeConflict = rangeColor.some(item => {
-            return fromSecond <= item.toSecond && toSecond >= item.fromSecond;
-          });
-          return rangeConflict ? { 'timeRangeConflict': true } : null;
+          const timeRangeConflictIndex = this.utilityServices.binaryTimeRangeSearch(rangeColor, fromSecond, toSecond);
+          return timeRangeConflictIndex >= 0 ? { 'timeRangeConflict': true } : null;
         }),
         catchError(() => of(null))
       );
